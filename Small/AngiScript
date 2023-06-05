@@ -13,13 +13,13 @@ class Launch:
     Scan = {"The Number and Question": "The Answer"}
     Type = ("LinuxOS", "MacOS (Not)", "WindowsOS (Not)", "AndroidOS (Not)")
     TypeOption = [0, 0, 0, 0]
-    SuperUser = 0
+    SupAndSubUser = 0
     Inventory = {}
 
     def __init__(self):
         self.OperationName = "Configuration Check of the Operating System"
         self.OperationDescription = "Functionality for checking the Configuration, which were defined in the " \
-                                       "Documentation of the Specific Platform."
+        "Documentation of the Specific Platform."
         # self.http = urllib3.PoolManager()
 
     def options(self):
@@ -44,7 +44,7 @@ class Launch:
     def OperationStart(self):
         # need specify for which OS Configuration Scan gonna be performed
         self.options()
-        value = input("Do You want to Scan only first Option? (y/n)")
+        value = input("Do You want to Scan only first Option? (y/n) ")
         if value == "y" or value == "Y":
             self.TypeOption[-1] = 1
         else:
@@ -82,15 +82,6 @@ class Launch:
         print('')
         print("OS prod information:")
         print(os.system('uname -a'))
-	
-	#
-	# TODO. Specific OS Distribution
-	# has possibility to have different Configuration Options
-	#
-	#
-	# Checking OS privileges of the Current User
-	#
-	
         print('')
         y = 1
         var_user = ''
@@ -105,182 +96,161 @@ class Launch:
             user = str(user[0])
         except subprocess.CalledProcessError as error:
             print('Error No: ' + str(y))
-	
+        
         try:
             var_output = subprocess.check_output(['groups', str(user)])
             print(var_output)
         except subprocess.CalledProcessError as error:
             print('Error No: ' + str(y))
-	    
-            if b'sudo' in var_output:
-                self.SuperUser = 1
-                self.Scan["No:" + str(y) + ". Does for checking the Configuration Administrative Access are Given?"] = 'Everything seems right.'
-                print("No:" + str(y) + " A. Everything seems right. Has Administrative Access.")
-            elif b'wheel' in var_output:
-                self.SuperUser = 1
-                self.Scan["No:" + str(y) + ". Does for checking the Configuration Administrative Access are Given?"] = 'Everything seems right.'
-                print("No:" + str(y) + " A. Everything seems right. Has Administrative Access.")
-            elif b'root' in var_output:
-                self.Scan["No:" + str(y) + ". Does for checking the Configuration Administrative Access are Given?"] = 'It gonna work.'
-                print("No:" + str(y) + " A. It gonna work. Has Administrative Access.")
-            else:
-                self.Scan["No:" + str(y) + ". Does for checking the Configuration Administrative Access are Given?"] = 'No.'
-                print("No:" + str(y) + " A. No.")
-	    
-            del var_user, var_output
-	    
-	    #
-	    # Checking Situation with the Users and Groups of the Operation System
-	    #
-	    
-	    #
-	    # ATT. Following commands does include 'sudo' or any other administrative prefix to the command itself.
-	    #
-	    
-            print('')
-            y += 1
-            var_output = ''
-            var_error = ''
-            
-            print("No:" + str(y) + " Q. Does exists access to Credentials file and does accounts are with empty password field?")
-            
-            if self.SuperUser == 1:
-                try:
-                    result = subprocess.run(
-                ['sudo','awk', '-F:', '''($2 == "") { print $1 "does not have password" }''', '/etc/shadow'], capture_output=True, text=True
-                )
-                except subprocess.CalledProcessError as error:
-                    print('Error No: ' + str(y))
-                    print(error)
-                    print(result.stderr)
-		    
-                var_output = result.stdout
-		
-                if self.checkValueInData("Permission denied", var_output) != '-1':
-                    self.Scan["No:" + str(y) + ". Does the User have permission to access the Shadow file (Linux)?"] = 'This User does not have Super User access privileges.'
-                    print("No:" + str(y) + " A. This User does not have Super User access privileges.")
-                else:
-                    if not var_output:
-                        self.Scan["No:" + str(y) + ". Does exists accounts with empty password field?"] = 'All accounts has the passwords and without empty fields.'
-                        print("No:" + str(y) + " A. All accounts has the passwords.")
-                    else:
-                        self.Scan["No:" + str(y) + ". Does exists accounts with empty password field?"] = 'Need to check for passwordless accounts.'
-                        print("No:" + str(y) + " A. Need to check for passwordless accounts.")
-            else:
-                try:
-                    result = subprocess.run(
-                ['awk', '-F:', '''($2 == "") { print $1 "does not have password" }''', '/etc/shadow'], capture_output=True, text=True
-                )
-                except subprocess.CalledProcessError as error:
-                    print('Error No: ' + str(y))
-                    print(error)
-                    print(result.stderr)
-                
-                var_output = result.stdout
-		
-                if self.checkValueInData("Permission denied", var_output) != '-1':
-                    self.Scan["No:" + str(y) + ". Does the User have permission to access the Shadow file (Linux)?"] = 'This User does not have Super User access privileges.'
-                    print("No:" + str(y) + " A. This User does not have Super User access privileges.")
-                else:
-                    if not var_output:
-                        self.Scan["No:" + str(y) + ". Does exists accounts with empty password field?"] = 'All accounts has the passwords and without empty fields.'
-                        print("No:" + str(y) + " A. All accounts has the passwords.")
-                    else:
-                        self.Scan["No:" + str(y) + ". Does exists accounts with empty password field?"] = 'Need to check for passwordless accounts.'
-                        print("No:" + str(y) + " A. Need to check for passwordless accounts.")
-	    
-            del var_output
-            
-            #
-            # Checking for specific known applications
-            #
-            
-            print('')
-            y += 1
-            var_output = ''
-            var_operation = ''
-            list_operations = ("H", "LI", "L")
-            
-            print("--- Checking Application Settings ---")
-            
-            """
-            " 1st value of @var eveInventory is mean for choosing the Operation:
-            " Codename:
-            " H - Help
-            " LI - Launch and return Output Only
-            " L - Launch
-            """
-            
-            self.Inventory["apparmor module is loaded."] = ("L", "apparmor_status")
-            self.Inventory["OpenSSL"] = ("LI", "openssl")
-            self.Inventory["nmap.org"] = ("H", "nmap", "nmap.ncat", "nmap.nping")
-            
-            for key, value in self.Inventory.items():
-                var_operation = value[0]
-                i = -1
-                for val in value:
-                    i = i + 1
-                    
-                    if i != 0 and var_operation == "H":
-                        try:
-                            result = subprocess.run(
-                            [val, '-h'], capture_output=True, text=True
-                            )
-                        except subprocess.CalledProcessError as error:
-                            print('Error No: ' + str(y))
-                            print(error)
-                            print(result.stderr)
-                            
-                            data_rev = self.checkValueInData(key, result.stdout)
-                            
-                            if data_rev < 0:
-                                self.Scan["No:" + str(y) + ". Does the app " + str(val) + " installed ?"] = str(val) + ' does not Present.'
-                                print("No:" + str(y) + " A. " + str(val) + " does not present in the OS.")
-                            else:
-                                self.Scan["No:" + str(y) + ". Does the app " + str(val) + " installed ?"] = str(val) + ' is Present.'
-                                print("No:" + str(y) + " A. " + str(val) + " is present in the OS.")
-	    		
-                    if i != 0 and var_operation == "L":
-                        try:
-                            result = subprocess.run(
-                            [val], capture_output=True, text=True
-                            )
-                        except subprocess.CalledProcessError as error:
-                            print('Error No: ' + str(y))
-                            print(error)
-                            print(result.stderr)
-                            
-                            data_rev = self.checkValueInData(key, result.stdout)
-                            
-                            if data_rev < 0:
-                                self.Scan["No:" + str(y) + ". Does the app " + str(val) + " installed ?"] = str(val) + ' does not Present.'
-                                print("No:" + str(y) + " A. " + str(val) + " does not present in the OS.")
-                            else:
-                                self.Scan["No:" + str(y) + ". Does the app " + str(val) + " installed ?"] = str(val) + ' is Present.'
-                                print("No:" + str(y) + " A. " + str(val) + " is present in the OS.")
-                                print(result.stdout)
-	    		
-                    if i != 0 and var_operation == "LI":
-                        try:
-                            result = subprocess.check_output([val, 'version'])
-                            result = result.decode('ascii').split('\n')
-                            result = str(result[0])
-                        except subprocess.CalledProcessError as error:
-                            print('Error No: ' + str(y))
-                            print(error)
-                            print(result)
-	    			
-                            data_rev = self.checkValueInData(key, result)
-	    			
-                            if data_rev < 0:
-                                self.Scan["No:" + str(y) + ". Does the app " + str(val) + " installed ?"] = str(val) + ' does not Present.'
-                                print("No:" + str(y) + " A. " + str(val) + " does not present in the OS.")
-                            else:
-                                self.Scan["No:" + str(y) + ". Does the app " + str(val) + " installed ?"] = str(val) + ' is Present.'
-                                print("No:" + str(y) + " A. " + str(val) + " is present in the OS.")
-                                print(result)
+        
+        if b'sudo' in var_output:
+            self.SupAndSubUser = 1
+            self.Scan["No:" + str(y) + ". Does Administrative Access is in Place for checking the Configuration?"] = 'Everything seems right.'
+            print("No:" + str(y) + " A. Everything seems right. There exists possibility for Administrative Access.")
+        elif b'adm' in var_output:
+            self.SupAndSubUser = 1
+            self.Scan["No:" + str(y) + ". Does Administrative Access is in Place for checking the Configuration?"] = 'Everything seems right.'
+            print("No:" + str(y) + " A. Everything seems right. There exists possibility for Administrative Access.")
+        elif b'wheel' in var_output:
+            self.SupAndSubUser = 1
+            self.Scan["No:" + str(y) + ". Does Administrative Access is in Place for checking the Configuration ?"] = 'Everything seems right.'
+            print("No:" + str(y) + " A. Everything seems right. There exists possibility for Administrative Access.")
+        elif b'root' in var_output:
+            self.SupAndSubUser = 1
+            self.Scan["No:" + str(y) + ". Does Administrative Access is in Place for checking the Configuration ?"] = 'It gonna work.'
+            print("No:" + str(y) + " A. It gonna work. Has Administrative Access.")
+        else:
+            self.Scan["No:" + str(y) + ". Does Administrative Access is in Place for checking the System Configuration ?"] = 'No.'
+            print("No:" + str(y) + " A. No.")
+        
+        del var_user, var_output
 
-            del var_output, var_operation, list_operations
+        print('')
+        y += 1
+        var_output = ''
+        var_error = ''
+            
+        print("No:" + str(y) + " Q. Does exists access to Credentials file and does accounts are with empty password field?")
+        
+        if self.SupAndSubUser == 1:
+            try:
+                result = subprocess.run(
+                ['sudo','awk','-F:','($2 == "") { print $1 " does not have password" }','/etc/shadow'], capture_output=True, text=True
+                )
+            except subprocess.CalledProcessError as error:
+                print('Error No: ' + str(y))
+                print(error)
+                print(result.stderr)
+            
+            var_output = result.stdout
+            
+            if self.checkValueInData("Permission denied", var_output) == '-1':
+                self.Scan["No:" + str(y) + ". Does the User have permission to access the Shadow File?"] = 'This User does not have read access of the Shadow File.'
+                print("No:" + str(y) + " A. This User can't access System privileges.")
+            else:
+                if not var_output:
+                    self.Scan["No:" + str(y) + ". Does exists accounts with empty password field?"] = 'All accounts has the passwords and not empty.'
+                    print("No:" + str(y) + " A. All accounts has the passwords.")
+                else:
+                    self.Scan["No:" + str(y) + ". Does exists accounts with empty password field?"] = 'Need to check for passwordless accounts.'
+                    print("No:" + str(y) + " A. Need to check for passwordless accounts.")
+            
+            del var_output
+        else:
+            try:
+                result = subprocess.run(
+                ['awk','-F:','($2 == "") { print $1 "does not have password" }','/etc/shadow'], capture_output=True, text=True
+                )
+            except subprocess.CalledProcessError as error:
+                print('Error No: ' + str(y))
+                print(error)
+                print(result.stderr)
+                
+            var_output = result.stdout
+            
+            if self.checkValueInData("Permission denied", var_output) == '-1':
+                self.Scan["No:" + str(y) + ". Does the User have permission to access the Shadow File?"] = 'This User does not have read access of the Shadow File.'
+                print("No:" + str(y) + " A. This User can't access System privileges.")
+            else:
+                if not var_output:
+                    self.Scan["No:" + str(y) + ". Does exists accounts with empty password field?"] = 'All accounts has the passwords and not empty.'
+                    print("No:" + str(y) + " A. All accounts has passwords.")
+                else:
+                    self.Scan["No:" + str(y) + ". Does exists accounts with empty password field?"] = 'Need to check for passwordless accounts.'
+                    print("No:" + str(y) + " A. Need to check for passwordless accounts.")
+            
+            del var_output
+        
+        print('')
+        y += 1
+        var_operation = ''
+        list_operations = ("H", "LI", "L")
+        
+        print("--- Check Available Applications ---")
+        
+        """
+        " 1st value of @var eveInventory is meant for choosing the Operation:
+        " Op Codename:
+        " H - Help
+        " LI - Launch and return Output Only
+        " L - Launch
+        """
+        self.Inventory["apparmor module"] = ("L", "apparmor_status")
+        self.Inventory["OpenSSL"] = ("LI", "openssl version")
+        self.Inventory["nmap.org"] = ("H", "nmap", "nmap.ncat -h", "nmap.nping -h")
+        
+        for key, value in self.Inventory.items():
+            var_operation = value[0]
+            i = -1
+            for val in value:
+                i = i + 1
+                    
+                if i != 0 and var_operation == "H":
+                    print("\nNo:" + str(y) + " C. " + key + ":")
+                    try:
+                        result = subprocess.run([val,'-h'], shell=True, capture_output=True)
+                    except subprocess.CalledProcessError as error:
+                        print('Error No: ' + str(y))
+                    
+                    if(result.stdout.decode('UTF-8') != ""):
+                        print(" " + result.stdout.decode('UTF-8'))
+                    elif(result.stderr.decode('UTF-8') != ""):
+                        prop = result.stderr.decode('UTF-8').split(':', maxsplit=2)
+                        print(prop[2])
+                    else:
+                        print("No idea about " + key)
+                
+                if i != 0 and var_operation == "L":
+                    print("\nNo:" + str(y) + " C. " + key + ":")
+                    try:
+                         result = subprocess.run([val], shell=True, capture_output=True)
+                    except subprocess.CalledProcessError as error:
+                         print('Error No: ' + str(y))
+                    
+                    if(result.stdout.decode('UTF-8') != ""):
+                        print(" " + result.stdout.decode('UTF-8'))
+                    elif(result.stderr.decode('UTF-8') != ""):
+                        prop = result.stderr.decode('UTF-8').split(':', maxsplit=2)
+                        print(prop[2])
+                    else:
+                        print("No idea about " + key)
+                
+                if i != 0 and var_operation == "LI":
+                    print("\nNo:" + str(y) + " C. " + key + ":")
+                    try:
+                        result = subprocess.run([val,'version'], shell=True, capture_output=True)
+                    except subprocess.CalledProcessError as error:
+                        print('Error No: ' + str(y))
+                    
+                    if(result.stdout.decode('UTF-8') != ""):
+                        print(" " + result.stdout.decode('UTF-8'))
+                    elif(result.stderr.decode('UTF-8') != ""):
+                        prop = result.stderr.decode('UTF-8').split(':', maxsplit=2)
+                        print(prop[2])
+                    else:
+                        print("No idea about " + key)
+
+        del var_operation, list_operations
 
 
     def MacOSScan(self):
